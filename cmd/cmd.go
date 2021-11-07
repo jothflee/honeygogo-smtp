@@ -19,6 +19,7 @@ import (
 
 var envPrefix = "HGG"
 var LogLevelStr = "info"
+var Port = "10025"
 var rootCmd = &cobra.Command{
 	Use:   "api",
 	Short: "api",
@@ -32,7 +33,7 @@ var rootCmd = &cobra.Command{
 		return err
 	},
 	Run: func(cmd *cobra.Command, args []string) {
-		out := core.StartSMTPServer(":10025")
+		out := core.StartSMTPServer(fmt.Sprintf(":%s", Port))
 		be := selectBackend("elasticsearch")
 
 		// catch sig
@@ -90,9 +91,8 @@ func selectBackend(name string) backend.Backend {
 
 func init() {
 
-	// Define cobra flags, the default value has the lowest (least significant) precedence
 	rootCmd.Flags().StringVarP(&LogLevelStr, "log", "l", "info", "log level (trace, debug, warn, error, fatal")
-	// rootCmd.Flags().StringVar(&Port, "port", "9000", "the port to listen on (default: 9000)")
+	rootCmd.Flags().StringVarP(&Port, "port", "p", "10025", "the port to listen on (default: 10025)")
 
 }
 

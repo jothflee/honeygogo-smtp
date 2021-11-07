@@ -3,8 +3,13 @@ package core
 import (
 	"io"
 	"io/ioutil"
+	"net"
+	"strings"
+	"time"
 
 	"github.com/emersion/go-smtp"
+	log "github.com/sirupsen/logrus"
+
 	"github.com/oschwald/geoip2-golang"
 )
 
@@ -21,8 +26,8 @@ type GeoPoint struct {
 type MessageMeta struct {
 	To       string      `json:"to"`
 	From     string      `json:"from"`
-	FromAddr string      `json:"from_addr"`
-	ToAddr   string      `json:"to_addr"`
+	FromAddr net.IP      `json:"from_addr"`
+	ToAddr   net.IP      `json:"to_addr"`
 	Size     int         `json:"size"`
 	Location GeoPoint    `json:"loc"`
 	Geo      geoip2.City `json:"geo"`
@@ -36,8 +41,9 @@ type ChannelBackend struct {
 
 func (bkd *ChannelBackend) NewSession(info smtp.ConnectionState, _ string) (smtp.Session, error) {
 	msg := &MessageMeta{
-		FromAddr: info.RemoteAddr.String(),
-		ToAddr:   info.LocalAddr.String(),
+		FromAddr: net.ParseIP(strings.Split(info.RemoteAddr.String(), ":")[0]),
+		ToAddr:   net.ParseIP(strings.Split(info.LocalAddr.String(), ":")[0]),
+		Milis:    time.Now().UTC().UnixNano() / int64(time.Millisecond),
 	}
 	return &Session{
 		channel: bkd.channel,
@@ -46,9 +52,12 @@ func (bkd *ChannelBackend) NewSession(info smtp.ConnectionState, _ string) (smtp
 }
 
 func (bkd *ChannelBackend) Login(state *smtp.ConnectionState, username, password string) (smtp.Session, error) {
+	log.Debug(state.Hostname, username, password)
+
 	return bkd.NewSession(*state, "")
 }
 func (bkd *ChannelBackend) AnonymousLogin(state *smtp.ConnectionState) (smtp.Session, error) {
+	log.Debug(state.Hostname)
 	return bkd.NewSession(*state, "")
 }
 
@@ -59,6 +68,7 @@ type Session struct {
 }
 
 func (s *Session) AuthPlain(username, password string) error {
+	log.Debug(username, password)
 	return nil
 }
 
