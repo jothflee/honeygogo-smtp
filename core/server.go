@@ -2,6 +2,7 @@ package core
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 	"time"
 
@@ -43,7 +44,7 @@ func StartSMTPServer(addr string) chan MessageMeta {
 			var db *geoip2.Reader
 			_, err := os.Stat("GeoLite2-City.mmdb")
 			if err != nil {
-				log.Info(err.Error())
+				log.Trace(fmt.Sprintf("os file state on geoip db error: %s", err.Error()))
 			} else {
 				db, err = geoip2.Open("GeoLite2-City.mmdb")
 				if err != nil {
@@ -60,7 +61,7 @@ func StartSMTPServer(addr string) chan MessageMeta {
 					if db != nil {
 						record, err := db.City(in.FromAddr)
 						if err != nil {
-							log.Fatal(err)
+							log.Trace(err)
 						}
 						in.Location = GeoPoint{
 							Latitude:  record.Location.Latitude,
