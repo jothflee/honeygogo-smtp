@@ -17,10 +17,26 @@ import (
 )
 
 func NewESBackend(index string) Backend {
-	esBackend := ESBackend{}
+	esBackend := ESBackend{
+		Index: index,
+	}
+	esBackend.Connect()
+	return &esBackend
+}
+
+type ESBackend struct {
+	Backend
+	Index  string
+	client *elasticsearch.Client
+	bulk   esutil.BulkIndexer
+}
+
+func (esb *ESBackend) Connect() {
 	esAddr := os.Getenv("ELASTICSEARCH_URL")
 	if esAddr != "" {
+		index := esb.Index
 		log.Debugf("ELASTICSEARCH_URL env configured to: %s", esAddr)
+		// TODO: make more complex
 		es, err := elasticsearch.NewDefaultClient()
 		if err != nil {
 			log.Fatalf("Error creating the client: %s", err)
@@ -31,33 +47,31 @@ func NewESBackend(index string) Backend {
 				log.Errorf(err.Error())
 			} else {
 				log.Info(resp.String())
+				// create honeygogo index
 				createESIndex(es, index)
-
-				esBackend.client = es
-
+				// create bulk indexer
 				indexer, _ := esutil.NewBulkIndexer(esutil.BulkIndexerConfig{
 					Client:        es,
 					Index:         index,
 					FlushInterval: 1 * time.Second,
 				})
-				esBackend.bulk = indexer
+
+				esb.client = es
+				esb.bulk = indexer
 			}
 
 		}
 	} else {
-		log.Debugf("ELASTICSEARCH_URL env not configured.")
-
+		log.Trace("ELASTICSEARCH_URL env not configured.")
 	}
-	return &esBackend
-}
 
-type ESBackend struct {
-	Backend
-	client *elasticsearch.Client
-	bulk   esutil.BulkIndexer
 }
-
 func (esb *ESBackend) OnMessage(msg core.MessageMeta) {
+
+	if esb.client == nil {
+		esb.Connect()
+	}
+
 	if esb.client != nil {
 		b, err := json.Marshal(msg)
 		if err == nil {
@@ -72,6 +86,7 @@ func (esb *ESBackend) OnMessage(msg core.MessageMeta) {
 			log.Error(err)
 		}
 	}
+
 }
 func (esb *ESBackend) Close() {
 

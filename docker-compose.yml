@@ -26,9 +26,10 @@ services:
     build: 
       context: .
       args:
-        MM_LICENSE_KEY: $MM_LICENSE
+        MM_LICENSE_KEY: $MM_LICENSE_KEY
     ports:
       - "10025:10025"
     environment:
       ELASTICSEARCH_URL: http://es:9200
+      HGG_PORT: 12345
 

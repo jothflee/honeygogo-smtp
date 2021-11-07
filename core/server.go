@@ -2,8 +2,7 @@ package core
 
 import (
 	"encoding/json"
-	"net"
-	"strings"
+	"os"
 	"time"
 
 	"github.com/oschwald/geoip2-golang"
@@ -41,32 +40,33 @@ func StartSMTPServer(addr string) chan MessageMeta {
 	// for i := 0; i < maxCores * .25; i++ {
 	for i := 0; i < 1; i++ {
 		go func() {
-			db, err := geoip2.Open("GeoLite2-City.mmdb")
+			var db *geoip2.Reader
+			_, err := os.Stat("GeoLite2-City.mmdb")
 			if err != nil {
-				log.Fatal(err)
+				log.Info(err.Error())
+			} else {
+				db, err = geoip2.Open("GeoLite2-City.mmdb")
+				if err != nil {
+					log.Info(err.Error())
+				}
 			}
-			defer db.Close()
-
+			if db != nil {
+				defer db.Close()
+			}
 			for {
 				select {
 				case in := <-msgChannel:
-
-					// If you are using strings that may be invalid, check that ip is not nil
-					fromip := net.ParseIP(strings.Split(in.FromAddr, ":")[0])
-					toip := net.ParseIP(strings.Split(in.FromAddr, ":")[0])
-					record, err := db.City(fromip)
-					if err != nil {
-						log.Fatal(err)
+					// if we have geoip, use it
+					if db != nil {
+						record, err := db.City(in.FromAddr)
+						if err != nil {
+							log.Fatal(err)
+						}
+						in.Location = GeoPoint{
+							Latitude:  record.Location.Latitude,
+							Longitude: record.Location.Longitude,
+						}
 					}
-					in.Milis = time.Now().UTC().UnixNano() / int64(time.Millisecond)
-					in.Location = GeoPoint{
-						Latitude:  record.Location.Latitude,
-						Longitude: record.Location.Longitude,
-					}
-
-					// decorated, move on with processing
-					in.FromAddr = fromip.String()
-					in.ToAddr = toip.String()
 					outChannel <- in
 				}
 			}
