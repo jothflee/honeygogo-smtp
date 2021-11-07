@@ -9,14 +9,14 @@ _Goper image by [egonelbre](https://github.com/egonelbre/gophers)_
 
 ### honygogo-smtp logs metadata about the emails sent to it. It does not relay or save the email data.
 
-# Usage
+# Usage Notes
 
-the smtp server runs on port 10025  
-set the `ELASTICSEARCH_URL` env var with the elasticsearch url if desired (ex. `http://es:9200`)
-set the `MM_LICENSE_KEY` env var to pull maxmind geoip database ([this is a free thing](https://dev.maxmind.com/geoip/geolite2-free-geolocation-data?lang=en))
-set the smtp server port with `HGG_PORT`
+- the smtp server runs on port 10025
+- set the `ELASTICSEARCH_URL` env var with the elasticsearch url if desired (ex. `http://es:9200`)
+- set the `MM_LICENSE_KEY` env var to pull maxmind geoip database ([this is a free thing](https://dev.maxmind.com/geoip/geolite2-free-geolocation-data?lang=en))
+- set the smtp server port with `HGG_PORT`
 
-[docker hub](https://hub.docker.com/r/jothflee/honeygogo-smtp)
+## [docker hub](https://hub.docker.com/r/jothflee/honeygogo-smtp)
 
 ```
 docker pull jothflee/honeygogo-smtp

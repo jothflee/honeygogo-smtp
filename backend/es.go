@@ -39,7 +39,7 @@ func (esb *ESBackend) Connect() {
 		// TODO: make more complex
 		es, err := elasticsearch.NewDefaultClient()
 		if err != nil {
-			log.Fatalf("Error creating the client: %s", err)
+			log.Trace("Error creating the es client: %s", err)
 		} else {
 			req := esapi.InfoRequest{}
 			resp, err := req.Do(context.Background(), es)
