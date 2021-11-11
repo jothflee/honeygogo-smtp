@@ -111,10 +111,10 @@ func createESIndex(client *elasticsearch.Client, index string) {
 					"type": "date",
 					"format": "epoch_millis"
 				},
-				"to_addr":{
+				"to_ip":{
 					"type": "ip"
 				},
-				"from_addr":{
+				"from_ip":{
 					"type": "ip"
 				}
 			}
