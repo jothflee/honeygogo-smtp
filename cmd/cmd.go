@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"net/smtp"
 	"os/signal"
 
 	"os"
@@ -17,9 +18,15 @@ import (
 	"github.com/spf13/viper"
 )
 
+var Fwd = ""
+var FwdUser = ""
+var FwdPw = ""
+var FwdServer = ""
+var ESIndex = "honeygogo"
 var envPrefix = "HGG"
 var LogLevelStr = "info"
 var Port = "10025"
+var Banner = "localhost"
 var rootCmd = &cobra.Command{
 	Use:   "api",
 	Short: "api",
@@ -33,8 +40,9 @@ var rootCmd = &cobra.Command{
 		return err
 	},
 	Run: func(cmd *cobra.Command, args []string) {
-		out := core.StartSMTPServer(fmt.Sprintf(":%s", Port))
-		be := selectBackend("elasticsearch")
+		out := core.StartSMTPServer(fmt.Sprintf(":%s", Port), Banner)
+		be := selectBackend("elasticsearch", ESIndex)
+		fwder := parseFwder()
 
 		// catch sig
 		sigC := make(chan os.Signal, 1)
@@ -45,6 +53,9 @@ var rootCmd = &cobra.Command{
 			case in := <-out:
 				if be != nil {
 					be.OnMessage(in)
+				}
+				if fwder != nil {
+					sendEmail(fwder, in)
 				}
 				log.Infof("%s", core.JSONstringify(in))
 			case <-sigC:
@@ -64,6 +75,26 @@ func Execute() {
 	}
 }
 
+func sendEmail(fwdTo *Forwarder, msg core.MessageMeta) {
+	from := msg.To
+	password := fwdTo.Password
+	to := []string{fwdTo.Address}
+	tmp := strings.Split(fwdTo.Host, ":")
+
+	smtpHost := tmp[0]
+	smtpPort := tmp[1]
+
+	message := msg.Data
+
+	// Create authentication
+	auth := smtp.PlainAuth("", from, password, smtpHost)
+	// Send actual message
+	err := smtp.SendMail(smtpHost+":"+smtpPort, auth, from, to, message)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+}
 func setLogLevel(level string) {
 	switch level {
 	case "info":
@@ -80,10 +111,10 @@ func setLogLevel(level string) {
 		log.SetLevel(logrus.TraceLevel)
 	}
 }
-func selectBackend(name string) backend.Backend {
-	switch name {
+func selectBackend(backendType, name string) backend.Backend {
+	switch backendType {
 	case "elasticsearch":
-		return backend.NewESBackend("honeygogo")
+		return backend.NewESBackend(name)
 	}
 
 	return nil
@@ -91,8 +122,14 @@ func selectBackend(name string) backend.Backend {
 
 func init() {
 
+	rootCmd.Flags().StringVarP(&ESIndex, "index", "i", "honeygogo", "the namespace/index/database name that will be used to store data in the backend (default: honeygogo)")
 	rootCmd.Flags().StringVarP(&LogLevelStr, "log", "l", "info", "log level (trace, debug, warn, error, fatal")
 	rootCmd.Flags().StringVarP(&Port, "port", "p", "10025", "the port to listen on (default: 10025)")
+	rootCmd.Flags().StringVarP(&Banner, "banner", "b", "localhost", "the domain presented on the smtp banner (default: localhost)")
+	rootCmd.Flags().StringVar(&Fwd, "fwd-addr", "", "the address to fwd all mail to (default: nowhere)")
+	rootCmd.Flags().StringVar(&FwdUser, "fwd-user", "", "the user to login to the fwd mailserver (default: '')")
+	rootCmd.Flags().StringVar(&FwdPw, "fwd-pw", "", "the password to login to the fwd mailserver (default: '')")
+	rootCmd.Flags().StringVar(&FwdServer, "fwd-server", "", "the host (host:port) of the mailserver (default: '')")
 
 }
 
