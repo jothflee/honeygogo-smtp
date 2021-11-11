@@ -22,14 +22,13 @@ func StartSMTPServer(addr string, bannerDomain string) chan MessageMeta {
 		be := NewChannelBackend(msgChannel)
 
 		s := smtp.NewServer(be)
-
+		s.AuthDisabled = true
 		s.Addr = addr
 		s.Domain = bannerDomain
 		s.ReadTimeout = 10 * time.Second
 		s.WriteTimeout = 10 * time.Second
 		s.MaxMessageBytes = 1024 * 1024
 		s.MaxRecipients = 50
-		s.AllowInsecureAuth = true
 
 		log.Println("Starting server at", s.Addr)
 		if err := s.ListenAndServe(); err != nil {
