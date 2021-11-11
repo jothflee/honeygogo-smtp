@@ -1,15 +1,18 @@
 package cmd
 
 import (
+	"bytes"
+	"crypto/tls"
 	"fmt"
-	"net/smtp"
 	"os/signal"
+	"strconv"
 
 	"os"
 	"strings"
 
 	"github.com/sirupsen/logrus"
 	log "github.com/sirupsen/logrus"
+	"gopkg.in/gomail.v2"
 
 	"github.com/jothflee/honeygogo/backend"
 	"github.com/jothflee/honeygogo/core"
@@ -21,6 +24,7 @@ import (
 var Fwd = ""
 var FwdUser = ""
 var FwdPw = ""
+var FwdTLS = false
 var FwdServer = ""
 var ESIndex = "honeygogo"
 var envPrefix = "HGG"
@@ -77,23 +81,39 @@ func Execute() {
 
 func sendEmail(fwdTo *Forwarder, msg core.MessageMeta) {
 	from := msg.To
+	user := fwdTo.User
 	password := fwdTo.Password
-	to := []string{fwdTo.Address}
+	to := fwdTo.Address
 	tmp := strings.Split(fwdTo.Host, ":")
-
 	smtpHost := tmp[0]
-	smtpPort := tmp[1]
+	smtpPort := 25
 
-	message := msg.Data
+	if len(tmp) > 1 {
+		i64, err := strconv.ParseInt(tmp[1], 10, 64)
+		if err == nil {
+			smtpPort = int(i64)
+		}
+	}
 
-	// Create authentication
-	auth := smtp.PlainAuth("", from, password, smtpHost)
-	// Send actual message
-	err := smtp.SendMail(smtpHost+":"+smtpPort, auth, from, to, message)
+	d := gomail.NewDialer(smtpHost, smtpPort, user, password)
+	if fwdTo.TLS {
+		d.TLSConfig = &tls.Config{InsecureSkipVerify: true}
+	}
+
+	d.LocalName = msg.ToDomain
+
+	mr := bytes.NewReader(msg.Data)
+
+	closer, err := d.Dial()
 	if err != nil {
 		log.Fatal(err)
 	}
 
+	closer.Send(from, []string{to}, mr)
+	err = closer.Close()
+	if err != nil {
+		log.Debug(err)
+	}
 }
 func setLogLevel(level string) {
 	switch level {
@@ -130,6 +150,7 @@ func init() {
 	rootCmd.Flags().StringVar(&FwdUser, "fwd-user", "", "the user to login to the fwd mailserver (default: '')")
 	rootCmd.Flags().StringVar(&FwdPw, "fwd-pw", "", "the password to login to the fwd mailserver (default: '')")
 	rootCmd.Flags().StringVar(&FwdServer, "fwd-server", "", "the host (host:port) of the mailserver (default: '')")
+	rootCmd.Flags().BoolVar(&FwdTLS, "fwd-tls", false, "the mailserver is using tls (default: false)")
 
 }
 

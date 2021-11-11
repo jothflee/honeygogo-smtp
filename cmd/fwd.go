@@ -6,6 +6,7 @@ type Forwarder struct {
 	Host     string
 	User     string
 	Password string
+	TLS      bool
 }
 
 func parseFwder() (fwd *Forwarder) {
@@ -15,6 +16,7 @@ func parseFwder() (fwd *Forwarder) {
 			Host:     FwdServer,
 			User:     FwdUser,
 			Password: FwdPw,
+			TLS:      FwdTLS,
 		}
 	}
 	return fwd
