@@ -1,4 +1,4 @@
-FROM golang:1.16-alpine as build
+FROM golang:1.20-alpine3.18 as build
 WORKDIR /go/src/app
 COPY ./go.mod /go/src/app/
 
@@ -15,11 +15,11 @@ RUN if ! [ -z "$MM_LICENSE_KEY" ];then \
     touch GeoLite2-City.mmdb; \
     fi
 ADD ./ /go/src/app/
-RUN CGO_ENABLED=0 GOOS=linux go build -ldflags '-extldflags "-static"' -o /go/bin/app
+RUN CGO_ENABLED=0 go build -ldflags '-extldflags "-static"' -o /go/bin/app github.com/jothflee/honeygogo
 
 # copy into our final image.
 # use alpine since we need to hack in the entrypoint until we golang it
-FROM alpine:3.12
+FROM alpine:3.18
 RUN apk add --no-cache curl
 
 COPY --from=build /go/bin/app /
