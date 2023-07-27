@@ -15,7 +15,7 @@ RUN if ! [ -z "$MM_LICENSE_KEY" ];then \
     touch GeoLite2-City.mmdb; \
     fi
 ADD ./ /go/src/app/
-RUN CGO_ENABLED=0 GOOS=linux go build -ldflags '-extldflags "-static"' -o /go/bin/app
+RUN CGO_ENABLED=0 go build -ldflags '-extldflags "-static"' -o /go/bin/app
 
 # copy into our final image.
 # use alpine since we need to hack in the entrypoint until we golang it
