@@ -42,10 +42,10 @@ type ChannelBackend struct {
 	channel chan MessageMeta
 }
 
-func (bkd *ChannelBackend) NewSession(info smtp.ConnectionState, _ string) (smtp.Session, error) {
+func (bkd *ChannelBackend) NewSession(c *smtp.Conn) (smtp.Session, error) {
 	msg := &MessageMeta{
-		FromIP: net.ParseIP(strings.Split(info.RemoteAddr.String(), ":")[0]),
-		ToIP:   net.ParseIP(strings.Split(info.LocalAddr.String(), ":")[0]),
+		FromIP: net.ParseIP(strings.Split(c.Conn().RemoteAddr().String(), ":")[0]),
+		ToIP:   net.ParseIP(strings.Split(c.Conn().LocalAddr().String(), ":")[0]),
 		Milis:  time.Now().UTC().UnixNano() / int64(time.Millisecond),
 	}
 	return &Session{
@@ -54,14 +54,14 @@ func (bkd *ChannelBackend) NewSession(info smtp.ConnectionState, _ string) (smtp
 	}, nil
 }
 
-func (bkd *ChannelBackend) Login(state *smtp.ConnectionState, username, password string) (smtp.Session, error) {
+func (bkd *ChannelBackend) Login(state *smtp.Conn, username, password string) (smtp.Session, error) {
 	log.Debug(state.Hostname, username, password)
 
-	return bkd.NewSession(*state, "")
+	return bkd.NewSession(state)
 }
-func (bkd *ChannelBackend) AnonymousLogin(state *smtp.ConnectionState) (smtp.Session, error) {
+func (bkd *ChannelBackend) AnonymousLogin(state *smtp.Conn) (smtp.Session, error) {
 	log.Debug(state.Hostname)
-	return bkd.NewSession(*state, "")
+	return bkd.NewSession(state)
 }
 
 // A Session is returned after EHLO.
@@ -75,7 +75,7 @@ func (s *Session) AuthPlain(username, password string) error {
 	return nil
 }
 
-func (s *Session) Mail(from string, opts smtp.MailOptions) error {
+func (s *Session) Mail(from string, opts *smtp.MailOptions) error {
 	s.msg.From = from
 	tmp := strings.Split(from, "@")
 	if len(tmp) > 1 {
