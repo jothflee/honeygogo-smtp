@@ -4,7 +4,7 @@ A lightweight SMTP honeypot server written in Go, leveraging [go-smtp](github.co
 
 Logs mail to stdout and elasticsearch.
 
-![crash gopher](https://github.com/jothflee/honeygogo-smtp/raw/default/docs/crash-dummy.png)  
+![crash gopher](https://github.com/jothflee/honeygogo-smtp/raw/main/docs/crash-dummy.png)  
 _Goper image by [egonelbre](https://github.com/egonelbre/gophers)_
 
 ### honygogo-smtp logs metadata about the emails sent to it. It does not relay or save the email data.
