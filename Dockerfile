@@ -1,4 +1,4 @@
-FROM golang:1.18-alpine3.18 as build
+FROM golang:1.20-alpine3.18 as build
 WORKDIR /go/src/app
 COPY ./go.mod /go/src/app/
 
