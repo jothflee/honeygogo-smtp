@@ -35,7 +35,7 @@ docker-compose up
 or
 
 ```
-go mody tidy
+go mod tidy
 go run main.go
 ```
 
